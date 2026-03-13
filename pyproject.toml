@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "coleman_coalitions"
+version = "0.1.0"
+description = "Python implementation of Coleman's (1973) mathematical framework for collective action and coalition analysis."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "Bjørn Erik Juel", email = "bjorneju@gmail.com" },
+]
+keywords = ["political science", "collective action", "coalition", "power", "Coleman"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+    "networkx>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "scipy"]
+
+[project.urls]
+Repository = "https://github.com/bjorneju/ColemanCoalitions/"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["coleman_coalitions*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

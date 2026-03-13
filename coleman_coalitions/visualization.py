@@ -1,0 +1,227 @@
+"""
+coleman_coalitions/visualization.py
+
+Visualization functions for Coleman coalition analysis results.
+
+All functions return matplotlib Figure objects and do NOT call plt.show().
+This makes them safe for headless/server environments and easy to embed in
+notebooks or save to file without triggering a display.
+"""
+from __future__ import annotations
+
+import numpy as np
+from numpy import ndarray
+import matplotlib.pyplot as plt
+import matplotlib.figure
+import networkx as nx
+
+from .coalitions import winning_coalitions
+
+
+def draw_coalition_map(
+    coalition_outputs: dict,
+    summary: dict,
+    TPM: list[list[float]],
+    figsize: tuple[int, int] = (12, 8),
+) -> matplotlib.figure.Figure:
+    """Draw a directed graph of all coalition transitions.
+
+    Each node is a feasible coalition; edge weight encodes the transition
+    probability from the TPM.  Node size reflects the coalition's total
+    self-value; winning (sink) coalitions are highlighted.
+
+    Parameters
+    ----------
+    coalition_outputs : dict   -- output of coalition_trad()
+    summary : dict             -- output of optimal_coalition()
+    TPM : list[list[float]]    -- row-normalised transition probability matrix
+    figsize : tuple
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    TPM_arr: ndarray = np.array(TPM)
+    num_coal: int = TPM_arr.shape[0]
+    names: list[str] = list(coalition_outputs.keys())
+
+    # Build edge list from non-zero entries of the TPM
+    conns: list[tuple] = [
+        (names[i], names[j], TPM_arr[i, j])
+        for i in range(num_coal) for j in range(num_coal)
+        if TPM_arr[i, j] > 0
+    ]
+
+    # Node size proportional to total actor value (self-value of the coalition)
+    node_sizes: ndarray = np.array([np.sum(summary[coal]['self']) for coal in names])
+    node_range = node_sizes.max() - node_sizes.min()
+    # Scale to [100, 1100] so all nodes are visible
+    nS: ndarray = 1000 * (0.1 + (node_sizes - node_sizes.min()) / max(node_range, 1e-12))
+
+    # Winning coalitions are coloured differently (non-zero value in nx.draw node_color)
+    winner: list[int] = winning_coalitions(TPM)
+
+    G: nx.DiGraph = nx.DiGraph()
+    G.add_nodes_from(names)
+    G.add_weighted_edges_from(conns)
+    # Line width scaled by edge weight (transition probability)
+    weights: list[float] = [3 * G[u][v]['weight'] for u, v in G.edges()]
+
+    fig, ax = plt.subplots(figsize=figsize)
+    nx.draw(
+        G, pos=nx.kamada_kawai_layout(G), ax=ax,
+        with_labels=True, node_size=nS, width=weights,
+        arrowsize=20, node_color=winner, alpha=0.4, font_size=14,
+    )
+    ax.set_title('Coalition transition map')
+    return fig
+
+
+def draw_strongest_transitions(
+    coalition_outputs: dict,
+    summary: dict,
+    TPM: list[list[float]],
+    figsize: tuple[int, int] = (12, 8),
+) -> matplotlib.figure.Figure:
+    """Draw only the strongest (most likely) outgoing transition from each coalition.
+
+    Produces a cleaner graph than draw_coalition_map by showing only the dominant
+    edge from each node — useful for quickly identifying transition chains.
+
+    Parameters
+    ----------
+    coalition_outputs : dict
+    summary : dict
+    TPM : list[list[float]]
+    figsize : tuple
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    TPM_arr: ndarray = np.array(TPM)
+    num_coal: int = TPM_arr.shape[0]
+    names: list[str] = list(coalition_outputs.keys())
+
+    # Keep only the maximum-weight outgoing edge per node
+    conns: list[tuple] = [
+        (names[i], names[j], TPM_arr[i, j])
+        for i in range(num_coal) for j in range(num_coal)
+        if TPM_arr[i, j] == np.max(TPM_arr[i]) and TPM_arr[i, j] > 0
+    ]
+
+    node_sizes: ndarray = np.array([np.sum(summary[coal]['self']) for coal in names])
+    node_range = node_sizes.max() - node_sizes.min()
+    nS: ndarray = 5000 * (0.1 + (node_sizes - node_sizes.min()) / max(node_range, 1e-12))
+    winner: list[int] = winning_coalitions(TPM)
+
+    G: nx.DiGraph = nx.DiGraph()
+    G.add_nodes_from(names)
+    G.add_weighted_edges_from(conns)
+    weights: list[float] = [3 * G[u][v]['weight'] for u, v in G.edges()]
+
+    fig, ax = plt.subplots(figsize=figsize)
+    nx.draw(
+        G, pos=nx.spring_layout(G, seed=42), ax=ax,
+        with_labels=True, node_size=nS, width=weights,
+        arrowsize=20, node_color=winner, alpha=0.4, font_size=14,
+    )
+    ax.set_title('Strongest coalition transitions')
+    return fig
+
+
+def draw_interest_heatmap(
+    data: list,
+    titles: list[str],
+    mask: list,
+    figsize: tuple[int, int] | None = None,
+) -> matplotlib.figure.Figure:
+    """Grid of heatmaps for varying-interest scenarios.
+
+    Each panel shows a 2-D interest or control matrix for one scenario,
+    masked and colour-coded by sign.  Useful for exploring how outcomes
+    change as actor interests vary across a parameter sweep.
+
+    Parameters
+    ----------
+    data : list of 2-D array-like  -- one matrix per scenario
+    titles : list[str]             -- panel titles (one per scenario)
+    mask : 2-D array-like          -- binary mask applied to each data matrix
+    figsize : tuple or None        -- defaults to (5*cols, 5*rows)
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    n_plots: int = len(data)
+    cols: int = 4
+    rows: int = max(1, (n_plots + cols - 1) // cols)
+    if figsize is None:
+        figsize = (5 * cols, 5 * rows)
+    iterator = list(range(len(data[0])))
+
+    fig = plt.figure(figsize=figsize)
+    im = None
+    for idx in range(n_plots):
+        ax = fig.add_subplot(rows, cols, idx + 1)
+        # Apply the mask element-wise (e.g. zero out diagonal or off-diagonal entries)
+        plotdata = [[data[idx][a][b] * mask[a][b] for a in iterator] for b in iterator]
+        im = ax.imshow(plotdata, extent=[-1, 1, -1, 1], vmin=-1, vmax=1, cmap='seismic')
+        ax.set_title(titles[idx])
+
+    if im is not None:
+        cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
+        fig.colorbar(im, cax=cbar_ax)
+    return fig
+
+
+def draw_power_distribution(
+    inputs: dict,
+    figsize: tuple[int, int] = (8, 4),
+) -> matplotlib.figure.Figure:
+    """Bar chart of actor power distribution.
+
+    Parameters
+    ----------
+    inputs : dict   -- must contain 'r' (actor power) and 'n' (number of actors)
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    r: ndarray = inputs['r']
+    n: int = inputs['n']
+    labels: list[str] = [f'Actor {i + 1}' for i in range(n)]
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.bar(labels, r, color='steelblue', alpha=0.8)
+    ax.set_ylabel('Power (r)')
+    ax.set_title('Actor power distribution')
+    ax.set_ylim(0, max(r) * 1.2)
+    return fig
+
+
+def draw_event_values(
+    inputs: dict,
+    figsize: tuple[int, int] = (8, 4),
+) -> matplotlib.figure.Figure:
+    """Bar chart of event value distribution.
+
+    Parameters
+    ----------
+    inputs : dict   -- must contain 'v' (event values) and 'q' (number of events)
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    v: ndarray = inputs['v']
+    q: int = inputs['q']
+    labels: list[str] = [f'Event {i + 1}' for i in range(q)]
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.bar(labels, v, color='darkorange', alpha=0.8)
+    ax.set_ylabel('Value (v)')
+    ax.set_title('Event value distribution')
+    ax.set_ylim(0, max(v) * 1.2)
+    return fig

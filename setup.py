@@ -5,11 +5,11 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="ColemanCoalitions",
-    version="0.0.1",
+    name="coleman_coalitions",
+    version="0.1.0",
     author="Bjørn Erik Juel",
     author_email="bjorneju@gmail.com",
-    description="A sef of functions implementing the concepts introduced by Coleman in 1973, and an extension to allow for the existence of coalitions within the collectve.",
+    description="Python implementation of Coleman's (1973) mathematical framework for collective action and coalition analysis.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/bjorneju/ColemanCoalitions/",
