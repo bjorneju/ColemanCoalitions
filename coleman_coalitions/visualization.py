@@ -136,6 +136,7 @@ def draw_interest_heatmap(
     titles: list[str],
     mask: list,
     figsize: tuple[int, int] | None = None,
+    matrix_type: str = 'interest',
 ) -> matplotlib.figure.Figure:
     """Grid of heatmaps for varying-interest scenarios.
 
@@ -149,17 +150,30 @@ def draw_interest_heatmap(
     titles : list[str]             -- panel titles (one per scenario)
     mask : 2-D array-like          -- binary mask applied to each data matrix
     figsize : tuple or None        -- defaults to (5*cols, 5*rows)
+    matrix_type : str
+        ``'interest'`` (default): directed interest, vmin=-1, vmax=1,
+        diverging red–blue colormap.
+        ``'control'``: control values, vmin=0, vmax=1, light-to-dark gray
+        colormap.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
+    if matrix_type == 'control':
+        cmap, vmin, vmax = 'Greys', 0.0, 1.0
+    else:
+        cmap, vmin, vmax = 'seismic', -1.0, 1.0
+
     n_plots: int = len(data)
     cols: int = 4
     rows: int = max(1, (n_plots + cols - 1) // cols)
     if figsize is None:
         figsize = (5 * cols, 5 * rows)
     iterator = list(range(len(data[0])))
+    n: int = len(iterator)
+    # Cell-boundary positions for grid lines within the [-1, 1] extent
+    grid_ticks: ndarray = np.linspace(-1, 1, n + 1)
 
     fig = plt.figure(figsize=figsize)
     im = None
@@ -167,8 +181,13 @@ def draw_interest_heatmap(
         ax = fig.add_subplot(rows, cols, idx + 1)
         # Apply the mask element-wise (e.g. zero out diagonal or off-diagonal entries)
         plotdata = [[data[idx][a][b] * mask[a][b] for a in iterator] for b in iterator]
-        im = ax.imshow(plotdata, extent=[-1, 1, -1, 1], vmin=-1, vmax=1, cmap='seismic')
+        im = ax.imshow(plotdata, extent=[-1, 1, -1, 1], vmin=vmin, vmax=vmax, cmap=cmap)
         ax.set_title(titles[idx])
+        # Grid lines at cell boundaries using minor ticks
+        ax.set_xticks(grid_ticks, minor=True)
+        ax.set_yticks(grid_ticks, minor=True)
+        ax.grid(True, which='minor', color='k', linewidth=0.5)
+        ax.tick_params(which='minor', length=0)
 
     if im is not None:
         cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
