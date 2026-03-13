@@ -65,6 +65,7 @@ from .coalitions import (
 from .visualization import (
     draw_coalition_map,
     draw_strongest_transitions,
+    draw_coalition_table,
     draw_interest_heatmap,
     draw_power_distribution,
     draw_event_values,
@@ -93,7 +94,7 @@ __all__ = [
     'winning_coalitions', 'is_winning_minimal', 'run_coalition_analysis',
     # visualization
     'draw_coalition_map', 'draw_strongest_transitions', 'draw_interest_heatmap',
-    'draw_power_distribution', 'draw_event_values',
+    'draw_power_distribution', 'draw_event_values', 'draw_coalition_table',
     # io
     'write_analysis', 'print_analysis',
 ]

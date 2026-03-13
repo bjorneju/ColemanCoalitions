@@ -9,6 +9,7 @@ notebooks or save to file without triggering a display.
 """
 from __future__ import annotations
 
+import ast
 import numpy as np
 from numpy import ndarray
 import matplotlib.pyplot as plt
@@ -224,4 +225,100 @@ def draw_event_values(
     ax.set_ylabel('Value (v)')
     ax.set_title('Event value distribution')
     ax.set_ylim(0, max(v) * 1.2)
+    return fig
+
+
+def draw_coalition_table(
+    coalition_outputs: dict,
+    summary: dict,
+    TPM: list[list[float]] | None = None,
+    actor_names: list[str] | None = None,
+    figsize: tuple[int, int] | None = None,
+    title: str = 'Coalition value table',
+) -> matplotlib.figure.Figure:
+    """Render coalition values as a formatted matplotlib table.
+
+    Produces a table matching the paper's layout: one row per feasible
+    coalition, columns for each actor's value, plus aggregate columns for
+    the coalition, opposition, and collectivity.  Winning (sink) coalitions
+    are highlighted in green when ``TPM`` is supplied.
+
+    Parameters
+    ----------
+    coalition_outputs : dict   -- output of coalition_trad()
+    summary : dict             -- output of optimal_coalition()
+    TPM : list[list[float]] or None
+        If provided, winning coalitions are highlighted green.
+    actor_names : list[str] or None
+        Labels for each actor.  Defaults to ['A', 'B', 'C', ...].
+    figsize : tuple or None
+        Figure size.  Auto-sized from the number of rows/columns if None.
+    title : str
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    names: list[str] = list(coalition_outputs.keys())
+    n_coalitions: int = len(names)
+    n_actors: int = len(summary[names[0]]['self'])
+
+    if actor_names is None:
+        actor_names = [chr(65 + i) for i in range(n_actors)]
+
+    winning: list[int] = winning_coalitions(TPM) if TPM is not None else [0] * n_coalitions
+
+    col_labels: list[str] = (
+        ['Coalition']
+        + [f'Actor {a}' for a in actor_names]
+        + ['Coalition', 'Opposition', 'Collectivity']
+    )
+    n_cols: int = len(col_labels)
+
+    rows: list[list[str]] = []
+    for key in names:
+        members: list[int] = ast.literal_eval(key)
+        s: list[float] = summary[key]['self']
+        coal_val: float = sum(s[i] for i in members)
+        opp_val: float = sum(s) - coal_val
+        coll_val: float = sum(s)
+        label: str = '+'.join(actor_names[i] for i in members)
+        rows.append(
+            [label]
+            + [f'{v:.2f}' for v in s]
+            + [f'{coal_val:.2f}', f'{opp_val:.2f}', f'{coll_val:.2f}']
+        )
+
+    if figsize is None:
+        figsize = (max(6, n_cols * 1.5), max(2, n_coalitions * 0.55 + 1.0))
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.axis('off')
+
+    tbl = ax.table(
+        cellText=rows,
+        colLabels=col_labels,
+        loc='center',
+        cellLoc='center',
+    )
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(10)
+    tbl.scale(1, 1.6)
+
+    # Style header row
+    for j in range(n_cols):
+        cell = tbl[0, j]
+        cell.set_facecolor('#2c5f8a')
+        cell.set_text_props(color='white', fontweight='bold')
+
+    # Style data rows: green for winners, white otherwise; bold aggregate cols
+    coal_col: int = n_actors + 1   # 'Coalition' aggregate column index
+    for i, (key, w) in enumerate(zip(names, winning)):
+        bg = '#d4edda' if w else '#ffffff'
+        for j in range(n_cols):
+            cell = tbl[i + 1, j]
+            cell.set_facecolor(bg)
+        tbl[i + 1, coal_col].set_text_props(fontweight='bold')
+
+    ax.set_title(title, pad=16, fontweight='bold')
     return fig
