@@ -74,6 +74,9 @@ from .visualization import (
 # I/O
 from .io import write_analysis, print_analysis
 
+# High-level API (JSON-friendly, for webapps and programmatic access)
+from .api import AnalysisConfig, CoalitionInfo, AnalysisResult, RawAnalysisData, analyze
+
 __all__ = [
     # core
     'setup', 'check_parameters', 'normalize_matrix_row',
@@ -97,4 +100,6 @@ __all__ = [
     'draw_power_distribution', 'draw_event_values', 'draw_coalition_table',
     # io
     'write_analysis', 'print_analysis',
+    # high-level api
+    'AnalysisConfig', 'CoalitionInfo', 'AnalysisResult', 'RawAnalysisData', 'analyze',
 ]
