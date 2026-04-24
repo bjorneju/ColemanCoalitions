@@ -229,6 +229,8 @@ def _bar(values: list[float], labels: list[str], title: str, color: str) -> plt.
     ax.set_ylim(0, max(values) * 1.15 if max(values) > 0 else 1)
     ax.set_title(title, fontsize=10)
     ax.set_ylabel("Value", fontsize=8)
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=9)
     for i, v in enumerate(values):
         ax.text(i, v + max(values) * 0.02, f"{v:.3f}", ha="center", fontsize=8)
     plt.tight_layout()
@@ -824,7 +826,7 @@ coalition, making the dominant dynamic easier to read.
         with col_map1:
             st.markdown("**All transitions**")
             try:
-                fig_all = cc.draw_coalition_map(raw.coalition_outputs, raw.summary, raw.tpm)
+                fig_all = cc.draw_coalition_map(raw.coalition_outputs, raw.summary, raw.tpm, actor_labels=a_lbls)
                 st.pyplot(fig_all, use_container_width=True)
                 plt.close(fig_all)
             except Exception as e:
@@ -833,7 +835,7 @@ coalition, making the dominant dynamic easier to read.
         with col_map2:
             st.markdown("**Strongest transitions only**")
             try:
-                fig_str = cc.draw_strongest_transitions(raw.coalition_outputs, raw.summary, raw.tpm)
+                fig_str = cc.draw_strongest_transitions(raw.coalition_outputs, raw.summary, raw.tpm, actor_labels=a_lbls)
                 st.pyplot(fig_str, use_container_width=True)
                 plt.close(fig_str)
             except Exception as e:

@@ -19,10 +19,20 @@ import networkx as nx
 from .coalitions import winning_coalitions
 
 
+def _abbreviate(labels: list[str]) -> list[str]:
+    """Return the shortest unique prefix for each label."""
+    for length in range(1, max(len(l) for l in labels) + 1):
+        abbrevs = [l[:length] for l in labels]
+        if len(set(abbrevs)) == len(abbrevs):
+            return abbrevs
+    return list(labels)
+
+
 def draw_coalition_map(
     coalition_outputs: dict,
     summary: dict,
     TPM: list[list[float]],
+    actor_labels: list[str] | None = None,
     figsize: tuple[int, int] = (12, 8),
 ) -> matplotlib.figure.Figure:
     """Draw a directed graph of all coalition transitions.
@@ -62,6 +72,15 @@ def draw_coalition_map(
     # Winning coalitions are coloured differently (non-zero value in nx.draw node_color)
     winner: list[int] = winning_coalitions(TPM)
 
+    if actor_labels is not None:
+        abbrevs = _abbreviate(actor_labels)
+        node_labels = {
+            name: "+".join(abbrevs[i] for i in ast.literal_eval(name))
+            for name in names
+        }
+    else:
+        node_labels = {name: name for name in names}
+
     G: nx.DiGraph = nx.DiGraph()
     G.add_nodes_from(names)
     G.add_weighted_edges_from(conns)
@@ -71,7 +90,7 @@ def draw_coalition_map(
     fig, ax = plt.subplots(figsize=figsize)
     nx.draw(
         G, pos=nx.kamada_kawai_layout(G), ax=ax,
-        with_labels=True, node_size=nS, width=weights,
+        labels=node_labels, with_labels=True, node_size=nS, width=weights,
         arrowsize=20, node_color=winner, alpha=0.4, font_size=14,
     )
     ax.set_title('Coalition transition map')
@@ -82,6 +101,7 @@ def draw_strongest_transitions(
     coalition_outputs: dict,
     summary: dict,
     TPM: list[list[float]],
+    actor_labels: list[str] | None = None,
     figsize: tuple[int, int] = (12, 8),
 ) -> matplotlib.figure.Figure:
     """Draw only the strongest (most likely) outgoing transition from each coalition.
@@ -116,6 +136,15 @@ def draw_strongest_transitions(
     nS: ndarray = 5000 * (0.1 + (node_sizes - node_sizes.min()) / max(node_range, 1e-12))
     winner: list[int] = winning_coalitions(TPM)
 
+    if actor_labels is not None:
+        abbrevs = _abbreviate(actor_labels)
+        node_labels = {
+            name: "+".join(abbrevs[i] for i in ast.literal_eval(name))
+            for name in names
+        }
+    else:
+        node_labels = {name: name for name in names}
+
     G: nx.DiGraph = nx.DiGraph()
     G.add_nodes_from(names)
     G.add_weighted_edges_from(conns)
@@ -124,7 +153,7 @@ def draw_strongest_transitions(
     fig, ax = plt.subplots(figsize=figsize)
     nx.draw(
         G, pos=nx.spring_layout(G, seed=42), ax=ax,
-        with_labels=True, node_size=nS, width=weights,
+        labels=node_labels, with_labels=True, node_size=nS, width=weights,
         arrowsize=20, node_color=winner, alpha=0.4, font_size=14,
     )
     ax.set_title('Strongest coalition transitions')
