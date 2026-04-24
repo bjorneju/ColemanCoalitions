@@ -6,4 +6,5 @@ paper:
 	cd drafts && pdflatex -interaction=nonstopmode coleman_coalitions_draft.tex
 	cd drafts && pdflatex -interaction=nonstopmode coleman_coalitions_draft.tex
 	cp drafts/coleman_coalitions_draft.pdf assets/draft.pdf
-	@echo "Done — assets/draft.pdf updated."
+	cp drafts/coleman_coalitions_draft.pdf static/draft.pdf
+	@echo "Done — assets/draft.pdf and static/draft.pdf updated."

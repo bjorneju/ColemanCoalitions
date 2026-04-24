@@ -3,7 +3,6 @@ pages/Working_Paper.py — Embedded working paper for Coleman Coalition Analyzer
 """
 from __future__ import annotations
 
-import base64
 from pathlib import Path
 
 import streamlit as st
@@ -22,23 +21,19 @@ st.warning(
     "Please do not cite without permission from the author."
 )
 
-_pdf_path = Path(__file__).parent.parent / "assets" / "draft.pdf"
-try:
-    _pdf_bytes = _pdf_path.read_bytes()
-    _b64 = base64.b64encode(_pdf_bytes).decode()
-    st.components.v1.html(
-        f'<iframe src="data:application/pdf;base64,{_b64}" '
-        f'width="100%" height="900px" style="border:none;"></iframe>',
-        height=920,
-        scrolling=False,
-    )
+# The PDF is served as a static asset at app/static/draft.pdf.
+# Static serving is enabled via .streamlit/config.toml.
+_static_pdf_url = "app/static/draft.pdf"
+_local_pdf = Path(__file__).parent.parent / "static" / "draft.pdf"
+
+st.components.v1.iframe(_static_pdf_url, height=900, scrolling=True)
+
+if _local_pdf.exists():
     st.download_button(
         "⬇️  Download draft PDF",
-        data=_pdf_bytes,
+        data=_local_pdf.read_bytes(),
         file_name="coleman_coalitions_draft.pdf",
         mime="application/pdf",
     )
-except FileNotFoundError:
-    st.info(
-        "Draft PDF not found. Run `make paper` from the project root to compile it from source."
-    )
+else:
+    st.info("Run `make paper` from the project root to compile the PDF from source.")
