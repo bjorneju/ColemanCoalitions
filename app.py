@@ -399,7 +399,7 @@ with st.sidebar:
     mode = st.radio(
         "Input mode",
         ["📖  Paper examples", "🌍  Other examples", "✏️  Create your own system"],
-        index=2,
+        index=1,
         label_visibility="collapsed",
     )
     st.divider()
