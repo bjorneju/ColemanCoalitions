@@ -7,6 +7,7 @@ Run with:
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1004,3 +1005,37 @@ coalition, making the dominant dynamic easier to read.
                 plt.close(fig_str)
             except Exception as e:
                 st.caption(f"Could not render map: {e}")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 6. WORKING PAPER
+# ══════════════════════════════════════════════════════════════════════════════
+st.divider()
+st.subheader("6. Working paper")
+
+st.warning(
+    "⚠️ **Unpublished draft — not peer-reviewed.** "
+    "This document is a working paper shared for transparency and feedback. "
+    "It has not been submitted to or accepted by any journal. "
+    "Please do not cite without permission from the author."
+)
+
+_pdf_path = "assets/draft.pdf"
+try:
+    with open(_pdf_path, "rb") as _f:
+        _pdf_bytes = _f.read()
+    _b64 = base64.b64encode(_pdf_bytes).decode()
+    st.components.v1.html(
+        f'<iframe src="data:application/pdf;base64,{_b64}" '
+        f'width="100%" height="800px" style="border:none;"></iframe>',
+        height=820,
+        scrolling=False,
+    )
+    st.download_button(
+        "⬇️  Download draft PDF",
+        data=_pdf_bytes,
+        file_name="coleman_coalitions_draft.pdf",
+        mime="application/pdf",
+    )
+except FileNotFoundError:
+    st.info("Working paper PDF not found (`assets/draft.pdf`).")
