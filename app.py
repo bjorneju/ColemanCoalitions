@@ -7,6 +7,7 @@ Run with:
 """
 from __future__ import annotations
 
+import hashlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -153,23 +154,38 @@ def _build_presets() -> dict:
 PRESETS = _build_presets()
 
 # ── Default labels and matrices for the custom mode ────────────────────────────
-_DEF_ACTORS    = ["Labour", "Greens", "Business", "Government"]
-_DEF_EVENTS    = ["Climate policy", "Tax reform", "Trade deal"]
-_DEF_RESOURCES = ["Political capital", "Media influence"]
+# Norwegian political parties example (5 actors, 4 events, 3 resources).
+# Events are coded so that positive = more of the policy (e.g. stronger climate
+# action, higher taxes/welfare, more rural support, more open immigration).
+# Control shares are calibrated from the 2021 Storting election among these five
+# parties (Høyre 36, KrF 3, Ap 48, Sp 28, MDG 3 seats out of 118 total).
 
-_DEF_Y = [[  0.5,  0.3, -0.2],   # Labour:      pro-climate, pro-tax, anti-trade
-           [  0.8,  0.1, -0.1],   # Greens:      strongly pro-climate
-           [ -0.2,  0.3,  0.5],   # Business:    anti-climate, pro-tax, pro-trade
-           [  0.2,  0.4,  0.4]]   # Government:  balanced
+_DEF_ACTORS    = ["Høyre", "KrF", "Arbeiderpartiet", "Senterpartiet", "MDG"]
+_DEF_EVENTS    = ["Klimapolitikk", "Skatt og velferd", "Distriktspolitikk", "Innvandring"]
+_DEF_RESOURCES = ["Stortingsseter", "Medieinnflytelse", "Velgeroppslutning"]
 
-_DEF_C = [[0.40, 0.10],           # Labour:      strong political, weak media
-           [0.15, 0.15],           # Greens:      moderate both
-           [0.10, 0.45],           # Business:    strong media, weak political
-           [0.35, 0.30]]           # Government:  balanced
+_DEF_Y = [
+    [ 0.20, -0.50, -0.20, -0.30],  # Høyre:          mild climate, anti-tax, anti-district, restrictive imm.
+    [ 0.30,  0.10,  0.30,  0.10],  # KrF:            moderate climate+district, some welfare, open imm.
+    [ 0.30,  0.50,  0.20,  0.00],  # Arbeiderpartiet: pro-climate+welfare+district, neutral imm.
+    [ 0.10,  0.20,  0.60, -0.30],  # Senterpartiet:   weak climate, some welfare, strong district, restrictive
+    [ 0.70,  0.20,  0.00,  0.30],  # MDG:            strongly pro-climate, some welfare, neutral, open imm.
+]
 
-_DEF_A = [[0.70, 0.30],           # Climate policy:  mostly political capital
-           [0.50, 0.50],           # Tax reform:      mixed
-           [0.20, 0.80]]           # Trade deal:      mostly media influence
+_DEF_C = [
+    [0.31, 0.28, 0.25],  # Høyre:           significant seats+media, moderate voter base
+    [0.03, 0.08, 0.05],  # KrF:             few seats, limited media and voters
+    [0.41, 0.30, 0.35],  # Arbeiderpartiet: most seats, strong media and voter base
+    [0.24, 0.20, 0.25],  # Senterpartiet:   significant seats and voter base
+    [0.03, 0.14, 0.10],  # MDG:             few seats, notable media presence
+]
+
+_DEF_A = [
+    [0.15, 0.35, 0.50],  # Klimapolitikk:    driven by public opinion and media
+    [0.55, 0.20, 0.25],  # Skatt og velferd: primarily a parliamentary decision
+    [0.40, 0.20, 0.40],  # Distriktspolitikk: seats + voter base in rural areas
+    [0.25, 0.45, 0.30],  # Innvandring:       media framing + parliamentary majority
+]
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -252,8 +268,8 @@ with st.sidebar:
 
     # ── Custom mode ───────────────────────────────────────────────────────────
     else:
-        n_actors    = int(st.number_input("Actors",           min_value=2, max_value=18, value=4, step=1))
-        n_events    = int(st.number_input("Events / issues",  min_value=1, max_value=20, value=3, step=1))
+        n_actors    = int(st.number_input("Actors",           min_value=2, max_value=18, value=5, step=1))
+        n_events    = int(st.number_input("Events / issues",  min_value=1, max_value=20, value=4, step=1))
         use_identity = st.checkbox(
             "Events = Resources (identity)",
             value=False,
@@ -262,7 +278,7 @@ with st.sidebar:
         if use_identity:
             n_resources = n_events
         else:
-            n_resources = int(st.number_input("Resources", min_value=1, max_value=20, value=2, step=1))
+            n_resources = int(st.number_input("Resources", min_value=1, max_value=20, value=3, step=1))
 
         st.subheader("Actor labels")
         _actor_defaults = _DEF_ACTORS + [f"Actor {i+1}" for i in range(len(_DEF_ACTORS), 18)]
@@ -368,6 +384,17 @@ if not use_identity:
                 key=f"a_{_key_sfx}", use_container_width=True,
             )
 
+
+# ── Clear stale results when inputs change ──────────────────────────────────────
+_hash_parts = [_key_sfx, str(y_df.values.round(8).tolist()), str(c_df.values.round(8).tolist())]
+if a_df is not None:
+    _hash_parts.append(str(a_df.values.round(8).tolist()))
+_current_config_hash = hashlib.md5("|".join(_hash_parts).encode()).hexdigest()
+
+if st.session_state.get("config_hash") != _current_config_hash:
+    st.session_state.pop("result", None)
+    st.session_state.pop("raw", None)
+    st.session_state["config_hash"] = _current_config_hash
 
 # ── Run button ─────────────────────────────────────────────────────────────────
 st.divider()
@@ -573,11 +600,27 @@ tabs_ctrl = st.tabs([
 ])
 
 with tabs_ctrl[0]:
-    fig = _heatmap(
-        result.constitutional_control, e_lbls, a_lbls,
-        "Constitutional control C = a @ c  (event × actor)",
-        cmap="Blues", vmin=0, vmax=1,
-    )
+    C_arr = np.array(result.constitutional_control)
+    rows_identical = C_arr.shape[0] > 1 and np.allclose(C_arr, C_arr[[0], :], atol=1e-8)
+
+    if rows_identical:
+        st.info(
+            "All events share the same constitutional control vector "
+            "(C = a @ c = c when the resource matrix is identity and all resources "
+            "are controlled in equal proportions). Showing the shared vector instead of "
+            "a redundant heatmap."
+        )
+        fig = _bar(
+            C_arr[0].tolist(), a_lbls,
+            "Constitutional control per actor  (identical for every event)",
+            "#4C78A8",
+        )
+    else:
+        fig = _heatmap(
+            result.constitutional_control, e_lbls, a_lbls,
+            "Constitutional control C = a @ c  (event × actor)",
+            cmap="Blues", vmin=0, vmax=1,
+        )
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
 
