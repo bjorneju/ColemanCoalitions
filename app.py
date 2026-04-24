@@ -35,7 +35,7 @@ st.caption(
     "Enter actor interests and resource control to solve for equilibrium power, "
     "coalition stability, and collective outcomes."
 )
-st.page_link("pages/Working_Paper.py", label="📄 Working paper (unpublished draft)", icon=None)
+st.markdown("📄 [Working paper (unpublished draft)](/Working_Paper)")
 
 
 # ── Preset examples ────────────────────────────────────────────────────────────
