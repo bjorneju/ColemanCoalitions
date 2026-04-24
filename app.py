@@ -478,11 +478,14 @@ st.header("Input matrices")
 if mode == "📖  Paper examples":
     _safe_name = example_name.replace(" ", "_").replace("—", "").replace(",", "")
     _key_sfx = f"preset_{_safe_name}"
+    _active_preset = preset
 elif mode == "🌍  Other examples":
     _safe_name = other_name.replace(" ", "_").replace("—", "").replace(",", "")
     _key_sfx = f"other_{_safe_name}"
+    _active_preset = other_preset
 else:
     _key_sfx = f"custom_{n_actors}_{n_events}_{n_resources}"
+    _active_preset = None
 
 tab_names = ["Interests (y)", "Control (c)"]
 if not use_identity:
@@ -496,17 +499,14 @@ with tabs[0]:
         "Positive = preference for a positive outcome; negative = preference for a negative outcome.  "
         "Magnitudes reflect interest strength. Rows are normalised automatically."
     )
-    if mode == "📖  Paper examples":
-        _y_init = preset["interest_matrix"]
-    elif mode == "🌍  Other examples":
-        _y_init = other_preset["interest_matrix"]
-    else:
-        # Pad / trim the default matrix to the requested dimensions
-        _y_init = [
+    _y_init = (
+        _active_preset["interest_matrix"] if _active_preset is not None
+        else [
             [(_DEF_Y[i][j] if i < len(_DEF_Y) and j < len(_DEF_Y[0]) else 1/n_events)
              for j in range(n_events)]
             for i in range(n_actors)
         ]
+    )
     y_df = st.data_editor(
         pd.DataFrame(_y_init, index=actor_labels, columns=event_labels),
         key=f"y_{_key_sfx}", use_container_width=True,
@@ -519,16 +519,14 @@ with tabs[1]:
         "Each row shows one actor's degree of control over each resource.  "
         "Rows are normalised automatically."
     )
-    if mode == "📖  Paper examples":
-        _c_init = preset["control_matrix"]
-    elif mode == "🌍  Other examples":
-        _c_init = other_preset["control_matrix"]
-    else:
-        _c_init = [
+    _c_init = (
+        _active_preset["control_matrix"] if _active_preset is not None
+        else [
             [(_DEF_C[i][j] if i < len(_DEF_C) and j < len(_DEF_C[0]) else 1/n_actors)
              for j in range(n_resources)]
             for i in range(n_actors)
         ]
+    )
     c_df = st.data_editor(
         pd.DataFrame(_c_init, index=actor_labels, columns=resource_labels),
         key=f"c_{_key_sfx}", use_container_width=True,
@@ -543,16 +541,14 @@ if not use_identity:
             "Each entry is how much event i draws on resource k.  "
             "Rows are normalised automatically."
         )
-        if mode == "📖  Paper examples":
-            _a_init = preset["resource_matrix"]  # None for all paper examples
-        elif mode == "🌍  Other examples":
-            _a_init = other_preset["resource_matrix"]
-        else:
-            _a_init = [
+        _a_init = (
+            _active_preset["resource_matrix"] if _active_preset is not None
+            else [
                 [(_DEF_A[i][j] if i < len(_DEF_A) and j < len(_DEF_A[0]) else 1/n_resources)
                  for j in range(n_resources)]
                 for i in range(n_events)
             ]
+        )
         if _a_init is not None:
             a_df = st.data_editor(
                 pd.DataFrame(_a_init, index=event_labels, columns=resource_labels),
@@ -799,50 +795,18 @@ with tabs_ctrl[0]:
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
 
-with tabs_ctrl[1]:
-    fig = _heatmap(
-        result.actor_event_control, a_lbls, e_lbls,
-        "Final actor–event control c_AE  (actor × event)",
-        cmap="RdBu_r", vmin=-1, vmax=1,
-    )
-    st.pyplot(fig, use_container_width=True)
-    plt.close(fig)
-
-with tabs_ctrl[2]:
-    fig = _heatmap(
-        result.actor_resource_control, a_lbls, r_lbls,
-        "Actor–resource control c_AR  (actor × resource)",
-        cmap="Blues", vmin=0, vmax=None,
-    )
-    st.pyplot(fig, use_container_width=True)
-    plt.close(fig)
-
-with tabs_ctrl[3]:
-    fig = _heatmap(
-        result.actor_actor_control, a_lbls, a_lbls,
-        "Actor–actor control z  (actor × actor)",
-        cmap="RdBu_r", vmin=-1, vmax=1,
-    )
-    st.pyplot(fig, use_container_width=True)
-    plt.close(fig)
-
-with tabs_ctrl[4]:
-    fig = _heatmap(
-        result.event_event_control, r_lbls, e_lbls,
-        "Event–event control c_EE = c @ x  (resource × event)",
-        cmap="Blues", vmin=0, vmax=None,
-    )
-    st.pyplot(fig, use_container_width=True)
-    plt.close(fig)
-
-with tabs_ctrl[5]:
-    fig = _heatmap(
-        result.fraction_of_resources, r_lbls, e_lbls,
-        "Fraction of resources F  (resource × event)",
-        cmap="YlOrRd", vmin=0, vmax=None,
-    )
-    st.pyplot(fig, use_container_width=True)
-    plt.close(fig)
+_ctrl_heatmap_specs = [
+    (result.actor_event_control,    a_lbls, e_lbls, "Final actor–event control c_AE  (actor × event)",       "RdBu_r", -1,  1),
+    (result.actor_resource_control, a_lbls, r_lbls, "Actor–resource control c_AR  (actor × resource)",       "Blues",   0,  None),
+    (result.actor_actor_control,    a_lbls, a_lbls, "Actor–actor control z  (actor × actor)",                "RdBu_r", -1,  1),
+    (result.event_event_control,    r_lbls, e_lbls, "Event–event control c_EE = c @ x  (resource × event)", "Blues",   0,  None),
+    (result.fraction_of_resources,  r_lbls, e_lbls, "Fraction of resources F  (resource × event)",          "YlOrRd",  0,  None),
+]
+for tab, (matrix, rows, cols, title, cmap, vmin, vmax) in zip(tabs_ctrl[1:], _ctrl_heatmap_specs):
+    with tab:
+        fig = _heatmap(matrix, rows, cols, title, cmap=cmap, vmin=vmin, vmax=vmax)
+        st.pyplot(fig, use_container_width=True)
+        plt.close(fig)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
