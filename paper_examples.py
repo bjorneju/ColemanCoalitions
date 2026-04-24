@@ -115,7 +115,7 @@ fig = cc.draw_coalition_table(co1, sm1, TPM1,
                               title='Example 1 — No conflict, no gain')
 _save(fig, 'ex1_table.png')
 
-fig = cc.draw_coalition_map(co1, sm1, TPM1)
+fig = cc.draw_coalition_map(co1, sm1, TPM1, actor_labels=list('ABC'))
 fig.suptitle('Example 1 — coalition map', fontweight='bold')
 _save(fig, 'ex1_coalition_map.png')
 
@@ -144,7 +144,7 @@ fig = cc.draw_coalition_table(co2, sm2, TPM2,
                               title='Example 2 — Conflicting attitudes')
 _save(fig, 'ex2_table.png')
 
-fig = cc.draw_coalition_map(co2, sm2, TPM2)
+fig = cc.draw_coalition_map(co2, sm2, TPM2, actor_labels=list('ABC'))
 fig.suptitle('Example 2 — coalition map', fontweight='bold')
 _save(fig, 'ex2_coalition_map.png')
 
@@ -173,7 +173,7 @@ fig = cc.draw_coalition_table(co3, sm3, TPM3,
                               title='Example 3 — Agreement on most issues wins')
 _save(fig, 'ex3_table.png')
 
-fig = cc.draw_strongest_transitions(co3, sm3, TPM3)
+fig = cc.draw_strongest_transitions(co3, sm3, TPM3, actor_labels=list('ABC'))
 fig.suptitle('Example 3 — strongest transitions', fontweight='bold')
 _save(fig, 'ex3_transitions.png')
 
@@ -203,7 +203,7 @@ fig = cc.draw_coalition_table(co4, sm4, TPM4,
                               title='Example 4 — Interest intensity overrides alignment')
 _save(fig, 'ex4_table.png')
 
-fig = cc.draw_strongest_transitions(co4, sm4, TPM4)
+fig = cc.draw_strongest_transitions(co4, sm4, TPM4, actor_labels=list('ABC'))
 fig.suptitle('Example 4 — strongest transitions', fontweight='bold')
 _save(fig, 'ex4_transitions.png')
 
@@ -234,11 +234,11 @@ fig = cc.draw_coalition_table(co5, sm5, TPM5,
                               title='Example 5 — Cycling loop (no stable coalition)')
 _save(fig, 'ex5_table.png')
 
-fig = cc.draw_coalition_map(co5, sm5, TPM5, figsize=(10, 7))
+fig = cc.draw_coalition_map(co5, sm5, TPM5, actor_labels=list('ABCD'), figsize=(10, 7))
 fig.suptitle('Example 5 — coalition transitions (cycling)', fontweight='bold')
 _save(fig, 'ex5_coalition_map.png')
 
-fig = cc.draw_strongest_transitions(co5, sm5, TPM5, figsize=(10, 7))
+fig = cc.draw_strongest_transitions(co5, sm5, TPM5, actor_labels=list('ABCD'), figsize=(10, 7))
 fig.suptitle('Example 5 — strongest transitions (cycling)', fontweight='bold')
 _save(fig, 'ex5_transitions.png')
 
@@ -275,7 +275,7 @@ fig = cc.draw_coalition_table(co6, sm6, TPM6,
                               title='Example 6 — Loop broken by adding Issue IV')
 _save(fig, 'ex6_table.png')
 
-fig = cc.draw_strongest_transitions(co6, sm6, TPM6, figsize=(10, 7))
+fig = cc.draw_strongest_transitions(co6, sm6, TPM6, actor_labels=list('ABCD'), figsize=(10, 7))
 fig.suptitle('Example 6 — strongest transitions (loop broken)', fontweight='bold')
 _save(fig, 'ex6_transitions.png')
 
@@ -306,12 +306,12 @@ fig = cc.draw_coalition_table(co7, sm7, TPM7,
                               title='Example 7 — Path dependence')
 _save(fig, 'ex7_table.png')
 
-fig = cc.draw_coalition_map(co7, sm7, TPM7, figsize=(12, 8))
+fig = cc.draw_coalition_map(co7, sm7, TPM7, actor_labels=list('ABCD'), figsize=(12, 8))
 fig.suptitle('Example 7 — coalition map (multiple sinks = path dependence)',
              fontweight='bold')
 _save(fig, 'ex7_coalition_map.png')
 
-fig = cc.draw_strongest_transitions(co7, sm7, TPM7, figsize=(12, 8))
+fig = cc.draw_strongest_transitions(co7, sm7, TPM7, actor_labels=list('ABCD'), figsize=(12, 8))
 fig.suptitle('Example 7 — strongest transitions', fontweight='bold')
 _save(fig, 'ex7_transitions.png')
 
