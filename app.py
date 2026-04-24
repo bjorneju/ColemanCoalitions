@@ -153,38 +153,179 @@ def _build_presets() -> dict:
 
 PRESETS = _build_presets()
 
-# ── Default labels and matrices for the custom mode ────────────────────────────
-# Norwegian political parties example (5 actors, 4 events, 3 resources).
-# Events are coded so that positive = more of the policy (e.g. stronger climate
-# action, higher taxes/welfare, more rural support, more open immigration).
-# Control shares are calibrated from the 2021 Storting election among these five
-# parties (Høyre 36, KrF 3, Ap 48, Sp 28, MDG 3 seats out of 118 total).
 
-_DEF_ACTORS    = ["Høyre", "KrF", "Arbeiderpartiet", "Senterpartiet", "MDG"]
-_DEF_EVENTS    = ["Klimapolitikk", "Skatt og velferd", "Distriktspolitikk", "Innvandring"]
-_DEF_RESOURCES = ["Stortingsseter", "Medieinnflytelse", "Velgeroppslutning"]
+def _build_other_examples() -> dict:
+    # ── Norwegian politics ────────────────────────────────────────────────────
+    no_actors = ["Høyre", "KrF", "Arbeiderpartiet", "Senterpartiet", "MDG"]
+    no_events = ["Klimapolitikk", "Skatt og velferd", "Distriktspolitikk", "Innvandring"]
+    no_res    = ["Stortingsseter", "Medieinnflytelse", "Velgeroppslutning"]
+    no_y = [
+        [ 0.20, -0.50, -0.20, -0.30],
+        [ 0.30,  0.10,  0.30,  0.10],
+        [ 0.30,  0.50,  0.20,  0.00],
+        [ 0.10,  0.20,  0.60, -0.30],
+        [ 0.70,  0.20,  0.00,  0.30],
+    ]
+    no_c = [
+        [0.31, 0.28, 0.25],
+        [0.03, 0.08, 0.05],
+        [0.41, 0.30, 0.35],
+        [0.24, 0.20, 0.25],
+        [0.03, 0.14, 0.10],
+    ]
+    no_a = [
+        [0.15, 0.35, 0.50],
+        [0.55, 0.20, 0.25],
+        [0.40, 0.20, 0.40],
+        [0.25, 0.45, 0.30],
+    ]
+
+    # ── Corporate strategy ────────────────────────────────────────────────────
+    biz_actors = ["CEO", "CFO", "Board Chair", "Lead Investor", "Union Rep"]
+    biz_events = ["Merger", "Cost cuts", "R&D investment", "Workforce expansion"]
+    biz_res    = ["Voting shares", "Financial leverage", "Public relations"]
+    biz_y = [
+        [ 0.50, -0.20,  0.60,  0.30],  # CEO:           pro-merger, anti-cuts, R&D, expansion
+        [ 0.30,  0.60, -0.20, -0.30],  # CFO:           merger OK, strong cuts, anti-R&D, anti-expansion
+        [ 0.40,  0.20,  0.30,  0.10],  # Board Chair:   cautiously pro on all
+        [ 0.60,  0.40, -0.30, -0.40],  # Lead Investor: merger+cuts, anti-R&D, anti-expansion
+        [-0.30, -0.70,  0.30,  0.70],  # Union Rep:     anti-merger, strongly anti-cuts, pro-R&D+expansion
+    ]
+    biz_c = [
+        [0.15, 0.20, 0.35],
+        [0.10, 0.35, 0.15],
+        [0.25, 0.15, 0.20],
+        [0.40, 0.25, 0.10],
+        [0.10, 0.05, 0.20],
+    ]
+    biz_a = [
+        [0.50, 0.30, 0.20],  # Merger:               voting shares dominate
+        [0.25, 0.55, 0.20],  # Cost cuts:            financial leverage
+        [0.20, 0.40, 0.40],  # R&D investment:       finance + PR
+        [0.20, 0.30, 0.50],  # Workforce expansion:  PR heavy
+    ]
+
+    # ── De fire statsmakter ───────────────────────────────────────────────────
+    stat_actors = ["Regjering", "Domstoler", "Politi", "Media"]
+    stat_events = ["Overvåkningslover", "Pressefrihet", "Rettslig uavhengighet", "Politiressurser"]
+    stat_res    = ["Lovgivningsmakt", "Budsjettmidler", "Offentlig tillit"]
+    stat_y = [
+        [ 0.60, -0.30, -0.20,  0.40],  # Regjering:  pro-surveillance, anti-press, limits courts, pro-police
+        [-0.30,  0.40,  0.80, -0.10],  # Domstoler:  anti-surveillance, pro-press, strongly pro-independence
+        [ 0.70, -0.20, -0.10,  0.60],  # Politi:     pro-surveillance, anti-press, mild, pro-resources
+        [-0.50,  0.80,  0.30, -0.10],  # Media:      anti-surveillance, strongly pro-press, pro-courts
+    ]
+    stat_c = [
+        [0.60, 0.45, 0.20],  # Regjering: strong legislative power and budget control
+        [0.15, 0.20, 0.30],
+        [0.15, 0.25, 0.20],
+        [0.10, 0.10, 0.30],  # Media: public trust
+    ]
+    stat_a = [
+        [0.60, 0.25, 0.15],  # Overvåkningslover:         legislative + budget
+        [0.25, 0.15, 0.60],  # Pressefrihet:              public trust
+        [0.40, 0.30, 0.30],  # Rettslig uavhengighet:     balanced
+        [0.20, 0.60, 0.20],  # Politiressurser:           budget heavy
+    ]
+
+    # ── High school group project ─────────────────────────────────────────────
+    hs_actors = ["Sofie", "Jonas", "Mia", "Emil", "Lena"]
+    hs_events = ["Prosjekttema", "Møtetider", "Arbeidsfordeling", "Presentasjon"]
+    hs_res    = ["Sosial innflytelse", "Fagkunnskap", "Tilgjengelig tid"]
+    hs_y = [
+        [ 0.30,  0.50,  0.20,  0.40],  # Sofie: moderate topic, likes structure, some work, strong on presentation
+        [ 0.60, -0.30,  0.10,  0.20],  # Jonas: strong topic opinions, dislikes fixed meetings
+        [ 0.20,  0.40,  0.60, -0.10],  # Mia:   neutral topic, structured, strong on fair work distribution
+        [ 0.50,  0.20, -0.20,  0.50],  # Emil:  strong topic opinion, not much work, loves presenting
+        [-0.10,  0.30,  0.50, -0.20],  # Lena:  flexible topic, structured, fair work, prefers not to present
+    ]
+    hs_c = [
+        [0.35, 0.20, 0.25],
+        [0.20, 0.40, 0.20],
+        [0.25, 0.25, 0.30],
+        [0.10, 0.25, 0.15],
+        [0.10, 0.20, 0.10],
+    ]
+    hs_a = [
+        [0.20, 0.50, 0.30],  # Prosjekttema:      mainly academic skills
+        [0.30, 0.20, 0.50],  # Møtetider:         available time matters most
+        [0.25, 0.35, 0.40],  # Arbeidsfordeling:  balanced
+        [0.45, 0.35, 0.20],  # Presentasjon:      social influence + skills
+    ]
+
+    return {
+        "Norwegian politics — Storting 2021": dict(
+            description=(
+                "Five Norwegian Storting parties negotiate over four key policy dimensions. "
+                "Control shares reflect 2021 election results among these parties. "
+                "The resource matrix encodes whether each issue is decided mainly by parliamentary "
+                "votes, media agenda-setting, or voter mobilisation."
+            ),
+            actor_labels=no_actors, event_labels=no_events, resource_labels=no_res,
+            interest_matrix=no_y, control_matrix=no_c, resource_matrix=no_a,
+        ),
+        "Corporate strategy — merger negotiation": dict(
+            description=(
+                "Five corporate stakeholders — CEO, CFO, Board Chair, Lead Investor, and Union Rep — "
+                "negotiate a proposed merger and its strategic consequences. "
+                "Resources capture voting power, financial leverage, and public-relations clout."
+            ),
+            actor_labels=biz_actors, event_labels=biz_events, resource_labels=biz_res,
+            interest_matrix=biz_y, control_matrix=biz_c, resource_matrix=biz_a,
+        ),
+        "De fire statsmakter — maktbalansen": dict(
+            description=(
+                "The classic separation of powers: Government, Courts, Police, and Media each pursue "
+                "their institutional interests across surveillance legislation, press freedom, "
+                "judicial independence, and police resources. "
+                "Resources are legislative power, budget funds, and public trust."
+            ),
+            actor_labels=stat_actors, event_labels=stat_events, resource_labels=stat_res,
+            interest_matrix=stat_y, control_matrix=stat_c, resource_matrix=stat_a,
+        ),
+        "High school group project": dict(
+            description=(
+                "Five students — Sofie, Jonas, Mia, Emil, and Lena — must agree on how to run "
+                "their group project: topic, meeting times, work distribution, and who presents. "
+                "Resources are social influence, academic skills, and available time."
+            ),
+            actor_labels=hs_actors, event_labels=hs_events, resource_labels=hs_res,
+            interest_matrix=hs_y, control_matrix=hs_c, resource_matrix=hs_a,
+        ),
+    }
+
+
+OTHER_EXAMPLES = _build_other_examples()
+
+# ── Default labels and matrices for the custom mode ────────────────────────────
+# Family holiday planning (5 members, 4 decisions, 3 resources).
+# Positive values = more of that outcome (e.g. beach over mountains, luxury over budget).
+
+_DEF_ACTORS    = ["Mom", "Dad", "Emma", "Lucas", "Grandpa"]
+_DEF_EVENTS    = ["Vacation spot", "Accommodation", "Activities", "Budget"]
+_DEF_RESOURCES = ["Decision votes", "Money", "Persuasion"]
 
 _DEF_Y = [
-    [ 0.20, -0.50, -0.20, -0.30],  # Høyre:          mild climate, anti-tax, anti-district, restrictive imm.
-    [ 0.30,  0.10,  0.30,  0.10],  # KrF:            moderate climate+district, some welfare, open imm.
-    [ 0.30,  0.50,  0.20,  0.00],  # Arbeiderpartiet: pro-climate+welfare+district, neutral imm.
-    [ 0.10,  0.20,  0.60, -0.30],  # Senterpartiet:   weak climate, some welfare, strong district, restrictive
-    [ 0.70,  0.20,  0.00,  0.30],  # MDG:            strongly pro-climate, some welfare, neutral, open imm.
+    [ 0.40,  0.50,  0.20,  0.30],  # Mom:    beach/travel, comfort, activities, mild budget consciousness
+    [-0.20, -0.40,  0.30,  0.60],  # Dad:    mountains over beach, no luxury, outdoor sports, tight budget
+    [ 0.60,  0.40,  0.50, -0.30],  # Emma:   strongly pro-beach, luxury, social activities, anti-budget
+    [ 0.30,  0.00,  0.80, -0.10],  # Lucas:  mild destination pref, neutral hotel, loves any activity
+    [-0.10,  0.50, -0.20,  0.20],  # Grandpa: cultural sites, comfortable hotel, relaxed pace, mild budget
 ]
 
 _DEF_C = [
-    [0.31, 0.28, 0.25],  # Høyre:           significant seats+media, moderate voter base
-    [0.03, 0.08, 0.05],  # KrF:             few seats, limited media and voters
-    [0.41, 0.30, 0.35],  # Arbeiderpartiet: most seats, strong media and voter base
-    [0.24, 0.20, 0.25],  # Senterpartiet:   significant seats and voter base
-    [0.03, 0.14, 0.10],  # MDG:             few seats, notable media presence
+    [0.30, 0.35, 0.30],  # Mom:    balanced across all three resources
+    [0.35, 0.45, 0.20],  # Dad:    strong decision voice and money, less persuasion
+    [0.10, 0.05, 0.25],  # Emma:   limited formal power but persuasive
+    [0.05, 0.02, 0.20],  # Lucas:  low formal power, surprisingly persuasive (puppy eyes)
+    [0.20, 0.13, 0.05],  # Grandpa: some decision weight and money, not very persuasive
 ]
 
 _DEF_A = [
-    [0.15, 0.35, 0.50],  # Klimapolitikk:    driven by public opinion and media
-    [0.55, 0.20, 0.25],  # Skatt og velferd: primarily a parliamentary decision
-    [0.40, 0.20, 0.40],  # Distriktspolitikk: seats + voter base in rural areas
-    [0.25, 0.45, 0.30],  # Innvandring:       media framing + parliamentary majority
+    [0.20, 0.45, 0.35],  # Vacation spot:   money + persuasion to reach agreement
+    [0.10, 0.70, 0.20],  # Accommodation:   mostly money
+    [0.30, 0.35, 0.35],  # Activities:      balanced — needs buy-in and budget
+    [0.40, 0.30, 0.30],  # Budget:          formal decision votes matter most
 ]
 
 
@@ -248,14 +389,14 @@ with st.sidebar:
 
     mode = st.radio(
         "Input mode",
-        ["📋  Load preset example", "✏️  Create your own system"],
-        index=1,
+        ["📖  Paper examples", "🌍  Other examples", "✏️  Create your own system"],
+        index=2,
         label_visibility="collapsed",
     )
     st.divider()
 
-    # ── Preset mode ───────────────────────────────────────────────────────────
-    if mode == "📋  Load preset example":
+    # ── Paper examples ────────────────────────────────────────────────────────
+    if mode == "📖  Paper examples":
         example_name = st.selectbox("Choose example", list(PRESETS.keys()), label_visibility="collapsed")
         preset = PRESETS[example_name]
         st.info(preset["description"])
@@ -264,6 +405,20 @@ with st.sidebar:
         event_labels    = preset["event_labels"]
         resource_labels = preset["resource_labels"]
         use_identity    = preset["resource_matrix"] is None
+        n_actors        = len(actor_labels)
+        n_events        = len(event_labels)
+        n_resources     = len(resource_labels)
+
+    # ── Other examples ────────────────────────────────────────────────────────
+    elif mode == "🌍  Other examples":
+        other_name = st.selectbox("Choose example", list(OTHER_EXAMPLES.keys()), label_visibility="collapsed")
+        other_preset = OTHER_EXAMPLES[other_name]
+        st.info(other_preset["description"])
+
+        actor_labels    = other_preset["actor_labels"]
+        event_labels    = other_preset["event_labels"]
+        resource_labels = other_preset["resource_labels"]
+        use_identity    = False
         n_actors        = len(actor_labels)
         n_events        = len(event_labels)
         n_resources     = len(resource_labels)
@@ -311,9 +466,12 @@ with st.sidebar:
 st.header("Input matrices")
 
 # Keys encode both mode and dimensions so editors reset on any structural change.
-if mode == "📋  Load preset example":
+if mode == "📖  Paper examples":
     _safe_name = example_name.replace(" ", "_").replace("—", "").replace(",", "")
     _key_sfx = f"preset_{_safe_name}"
+elif mode == "🌍  Other examples":
+    _safe_name = other_name.replace(" ", "_").replace("—", "").replace(",", "")
+    _key_sfx = f"other_{_safe_name}"
 else:
     _key_sfx = f"custom_{n_actors}_{n_events}_{n_resources}"
 
@@ -329,8 +487,10 @@ with tabs[0]:
         "Positive = preference for a positive outcome; negative = preference for a negative outcome.  "
         "Magnitudes reflect interest strength. Rows are normalised automatically."
     )
-    if mode == "📋  Load preset example":
+    if mode == "📖  Paper examples":
         _y_init = preset["interest_matrix"]
+    elif mode == "🌍  Other examples":
+        _y_init = other_preset["interest_matrix"]
     else:
         # Pad / trim the default matrix to the requested dimensions
         _y_init = [
@@ -350,8 +510,10 @@ with tabs[1]:
         "Each row shows one actor's degree of control over each resource.  "
         "Rows are normalised automatically."
     )
-    if mode == "📋  Load preset example":
+    if mode == "📖  Paper examples":
         _c_init = preset["control_matrix"]
+    elif mode == "🌍  Other examples":
+        _c_init = other_preset["control_matrix"]
     else:
         _c_init = [
             [(_DEF_C[i][j] if i < len(_DEF_C) and j < len(_DEF_C[0]) else 1/n_actors)
@@ -372,8 +534,10 @@ if not use_identity:
             "Each entry is how much event i draws on resource k.  "
             "Rows are normalised automatically."
         )
-        if mode == "📋  Load preset example":
+        if mode == "📖  Paper examples":
             _a_init = preset["resource_matrix"]  # None for all paper examples
+        elif mode == "🌍  Other examples":
+            _a_init = other_preset["resource_matrix"]
         else:
             _a_init = [
                 [(_DEF_A[i][j] if i < len(_DEF_A) and j < len(_DEF_A[0]) else 1/n_resources)
