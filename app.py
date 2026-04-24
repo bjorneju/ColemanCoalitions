@@ -8,6 +8,7 @@ Run with:
 from __future__ import annotations
 
 import hashlib
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -35,7 +36,14 @@ st.caption(
     "Enter actor interests and resource control to solve for equilibrium power, "
     "coalition stability, and collective outcomes."
 )
-st.markdown("📄 [Working paper (unpublished draft)](/Working_Paper)")
+_draft_pdf = Path("assets/draft.pdf")
+if _draft_pdf.exists():
+    st.download_button(
+        "📄 Working paper (unpublished draft)",
+        data=_draft_pdf.read_bytes(),
+        file_name="coleman_coalitions_draft.pdf",
+        mime="application/pdf",
+    )
 
 
 # ── Preset examples ────────────────────────────────────────────────────────────
