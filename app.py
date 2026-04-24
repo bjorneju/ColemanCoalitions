@@ -1,17 +1,8 @@
 """
 app.py — Interactive Streamlit webapp for Coleman Coalition Analysis.
 
-Users configure actors, events, and resources (number and labels), enter
-interest and control matrices via spreadsheet-style editors, and receive an
-analysis report — power distributions, coalition stability, transition
-probabilities, and more — live in the browser.
-
 Run with:
     pip install "coleman_coalitions[webapp]"
-    streamlit run app.py
-
-Or install manually:
-    pip install streamlit pandas
     streamlit run app.py
 """
 from __future__ import annotations
@@ -43,6 +34,142 @@ st.caption(
     "Enter actor interests and resource control to solve for equilibrium power, "
     "coalition stability, and collective outcomes."
 )
+
+
+# ── Preset examples ────────────────────────────────────────────────────────────
+# All paper examples use identity resource matrices (each issue backed by one resource).
+# Matrices are in library convention: interest_matrix = (n_actors × n_events),
+# control_matrix = (n_actors × n_resources) — rows will be normalised automatically.
+
+def _build_presets() -> dict:
+    unif3 = (np.ones((3, 3)) / 3).tolist()
+
+    # ── Examples 1–4: 3 actors (A, B, C), 3 issues ──────────────────────────
+    e1_y = unif3  # all positive, uniform → no conflict
+    e1_c = unif3
+
+    att2 = np.array([[+1,+1,-1],[+1,-1,+1],[-1,+1,+1]], dtype=float) / 3
+    e2_y = att2.T.tolist()   # (n×q): actor A → [+I,+II,−III], etc.
+    e2_c = unif3
+
+    att3 = np.array([[-1,+1,-1],[+1,-1,+1],[-1,+1,+1]], dtype=float) / 3
+    e3_y = att3.T.tolist()
+    e3_c = unif3
+
+    int4 = np.array([[.10,.10,.10],[.20,.20,.20],[.70,.70,.70]])
+    att3_arr = np.array([[-1,+1,-1],[+1,-1,+1],[-1,+1,+1]], dtype=float)
+    e4_y = (att3_arr * int4).T.tolist()
+    e4_c = unif3
+
+    # ── Examples 5–7: 4 actors (A, B, C, D), identity resources ─────────────
+    d5 = np.array([[ 0.21,-0.15, 0.27,-0.49],
+                   [ 0.06,-0.44, 0.57,-0.19],
+                   [-0.73, 0.41, 0.16, 0.32]])        # (3,4) issues×actors
+    ctrl5 = np.array([[0.49,0.07,0.38,0.06]]*3)       # (3,4) resources×actors
+    e5_y = d5.T.tolist()        # (4,3) actors×issues
+    e5_c = ctrl5.T.tolist()     # (4,3) actors×resources
+
+    d6_raw = np.vstack([d5, np.array([[-0.50,0.15,0.50,0.20]])])  # (4,4)
+    d6 = d6_raw / np.sum(np.abs(d6_raw), axis=0, keepdims=True)
+    ctrl6 = np.array([[0.49,0.07,0.38,0.06]]*4)
+    e6_y = d6.T.tolist()
+    e6_c = ctrl6.T.tolist()
+
+    d7 = np.array([[ 0.05, 0.24, 0.32, 0.24],
+                   [ 0.20,-0.53,-0.23,-0.43],
+                   [ 0.75, 0.23,-0.45, 0.32]])
+    ctrl7 = np.array([[0.33,0.16,0.21,0.30]]*3)
+    e7_y = d7.T.tolist()
+    e7_c = ctrl7.T.tolist()
+
+    abc  = ["A", "B", "C"]
+    abcd = ["A", "B", "C", "D"]
+    iss3 = ["Issue I", "Issue II", "Issue III"]
+    iss4 = ["Issue I", "Issue II", "Issue III", "Issue IV"]
+
+    return {
+        "Example 1 — No conflict, no gain": dict(
+            description=(
+                "All actors have identical, positive attitudes on every issue and equal "
+                "control. No actor gains from forming a coalition — the outcome is the same "
+                "regardless of who cooperates."
+            ),
+            actor_labels=abc, event_labels=iss3, resource_labels=iss3,
+            interest_matrix=e1_y, control_matrix=e1_c, resource_matrix=None,
+        ),
+        "Example 2 — Symmetric conflict": dict(
+            description=(
+                "Each actor disagrees with the other two on exactly one issue. "
+                "All two-actor coalitions are equally valuable, so the first movers win — "
+                "but it does not matter which coalition forms."
+            ),
+            actor_labels=abc, event_labels=iss3, resource_labels=iss3,
+            interest_matrix=e2_y, control_matrix=e2_c, resource_matrix=None,
+        ),
+        "Example 3 — Agreement on most issues wins": dict(
+            description=(
+                "A and C agree on two of three issues; all other pairs agree on only one. "
+                "The A+C coalition dominates and is the unique stable outcome."
+            ),
+            actor_labels=abc, event_labels=iss3, resource_labels=iss3,
+            interest_matrix=e3_y, control_matrix=e3_c, resource_matrix=None,
+        ),
+        "Example 4 — Interest intensity overrides alignment": dict(
+            description=(
+                "Same attitudes as Example 3, but Issue III carries 70 % of each actor's "
+                "interest weight. This reverses the winning coalition: B+C now wins because "
+                "they agree on the issue that matters most."
+            ),
+            actor_labels=abc, event_labels=iss3, resource_labels=iss3,
+            interest_matrix=e4_y, control_matrix=e4_c, resource_matrix=None,
+        ),
+        "Example 5 — Cycling loop (no stable coalition)": dict(
+            description=(
+                "With 4 actors and heterogeneous interests, no coalition is stable: the "
+                "transition graph cycles endlessly. No winning coalition exists."
+            ),
+            actor_labels=abcd, event_labels=iss3, resource_labels=iss3,
+            interest_matrix=e5_y, control_matrix=e5_c, resource_matrix=None,
+        ),
+        "Example 6 — Loop broken by adding Issue IV": dict(
+            description=(
+                "Adding a fourth issue on which B, C, and D agree breaks the cycle from "
+                "Example 5 and produces a unique stable winning coalition."
+            ),
+            actor_labels=abcd, event_labels=iss4, resource_labels=iss4,
+            interest_matrix=e6_y, control_matrix=e6_c, resource_matrix=None,
+        ),
+        "Example 7 — Path dependence": dict(
+            description=(
+                "Multiple stable winning coalitions coexist. Which one actually forms "
+                "depends on the starting point — a canonical illustration of path dependence."
+            ),
+            actor_labels=abcd, event_labels=iss3, resource_labels=iss3,
+            interest_matrix=e7_y, control_matrix=e7_c, resource_matrix=None,
+        ),
+    }
+
+
+PRESETS = _build_presets()
+
+# ── Default labels and matrices for the custom mode ────────────────────────────
+_DEF_ACTORS    = ["Labour", "Greens", "Business", "Government"]
+_DEF_EVENTS    = ["Climate policy", "Tax reform", "Trade deal"]
+_DEF_RESOURCES = ["Political capital", "Media influence"]
+
+_DEF_Y = [[  0.5,  0.3, -0.2],   # Labour:      pro-climate, pro-tax, anti-trade
+           [  0.8,  0.1, -0.1],   # Greens:      strongly pro-climate
+           [ -0.2,  0.3,  0.5],   # Business:    anti-climate, pro-tax, pro-trade
+           [  0.2,  0.4,  0.4]]   # Government:  balanced
+
+_DEF_C = [[0.40, 0.10],           # Labour:      strong political, weak media
+           [0.15, 0.15],           # Greens:      moderate both
+           [0.10, 0.45],           # Business:    strong media, weak political
+           [0.35, 0.30]]           # Government:  balanced
+
+_DEF_A = [[0.70, 0.30],           # Climate policy:  mostly political capital
+           [0.50, 0.50],           # Tax reform:      mixed
+           [0.20, 0.80]]           # Trade deal:      mostly media influence
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -97,89 +224,128 @@ def _narrative(text: str, label: str = "What does this mean?") -> None:
         st.markdown(text)
 
 
-# ── Sidebar: system configuration ─────────────────────────────────────────────
+# ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("System setup")
 
-    n_actors = int(st.number_input("Actors", min_value=2, max_value=18, value=3, step=1))
-    n_events = int(st.number_input("Events / issues", min_value=1, max_value=20, value=3, step=1))
-
-    use_identity = st.checkbox(
-        "Events = Resources (identity)",
-        value=True,
-        help=(
-            "When checked (default), each event is backed by exactly one dedicated "
-            "resource. Uncheck to specify a custom Event × Resource requirements matrix."
-        ),
+    mode = st.radio(
+        "Input mode",
+        ["📋  Load preset example", "✏️  Create your own system"],
+        index=1,
+        label_visibility="collapsed",
     )
+    st.divider()
 
-    if use_identity:
-        n_resources = n_events
+    # ── Preset mode ───────────────────────────────────────────────────────────
+    if mode == "📋  Load preset example":
+        example_name = st.selectbox("Choose example", list(PRESETS.keys()), label_visibility="collapsed")
+        preset = PRESETS[example_name]
+        st.info(preset["description"])
+
+        actor_labels    = preset["actor_labels"]
+        event_labels    = preset["event_labels"]
+        resource_labels = preset["resource_labels"]
+        use_identity    = preset["resource_matrix"] is None
+        n_actors        = len(actor_labels)
+        n_events        = len(event_labels)
+        n_resources     = len(resource_labels)
+
+    # ── Custom mode ───────────────────────────────────────────────────────────
     else:
-        n_resources = int(
-            st.number_input("Resources", min_value=1, max_value=20, value=n_events, step=1)
+        n_actors    = int(st.number_input("Actors",           min_value=2, max_value=18, value=4, step=1))
+        n_events    = int(st.number_input("Events / issues",  min_value=1, max_value=20, value=3, step=1))
+        use_identity = st.checkbox(
+            "Events = Resources (identity)",
+            value=False,
+            help="When unchecked, you can define a custom Event × Resource requirements matrix.",
         )
+        if use_identity:
+            n_resources = n_events
+        else:
+            n_resources = int(st.number_input("Resources", min_value=1, max_value=20, value=2, step=1))
 
-    st.subheader("Actor labels")
-    actor_labels = [
-        st.text_input(f"Actor {i + 1}", value=f"A{i + 1}", key=f"al_{i}")
-        for i in range(n_actors)
-    ]
-
-    st.subheader("Event labels")
-    event_labels = [
-        st.text_input(f"Event {i + 1}", value=f"E{i + 1}", key=f"el_{i}")
-        for i in range(n_events)
-    ]
-
-    if not use_identity:
-        st.subheader("Resource labels")
-        resource_labels = [
-            st.text_input(f"Resource {i + 1}", value=f"R{i + 1}", key=f"rl_{i}")
-            for i in range(n_resources)
+        st.subheader("Actor labels")
+        _actor_defaults = _DEF_ACTORS + [f"Actor {i+1}" for i in range(len(_DEF_ACTORS), 18)]
+        actor_labels = [
+            st.text_input(f"Actor {i+1}", value=_actor_defaults[i], key=f"al_{i}")
+            for i in range(n_actors)
         ]
-    else:
-        resource_labels = event_labels[:]
+
+        st.subheader("Event labels")
+        _event_defaults = _DEF_EVENTS + [f"Event {i+1}" for i in range(len(_DEF_EVENTS), 20)]
+        event_labels = [
+            st.text_input(f"Event {i+1}", value=_event_defaults[i], key=f"el_{i}")
+            for i in range(n_events)
+        ]
+
+        if not use_identity:
+            st.subheader("Resource labels")
+            _res_defaults = _DEF_RESOURCES + [f"Resource {i+1}" for i in range(len(_DEF_RESOURCES), 20)]
+            resource_labels = [
+                st.text_input(f"Resource {i+1}", value=_res_defaults[i], key=f"rl_{i}")
+                for i in range(n_resources)
+            ]
+        else:
+            resource_labels = event_labels[:]
 
 
 # ── Matrix editors ─────────────────────────────────────────────────────────────
 st.header("Input matrices")
 
-# Key suffix encodes dimensions so editors reset automatically when dimensions change
-dim_key = f"{n_actors}_{n_events}_{n_resources}"
+# Keys encode both mode and dimensions so editors reset on any structural change.
+if mode == "📋  Load preset example":
+    _safe_name = example_name.replace(" ", "_").replace("—", "").replace(",", "")
+    _key_sfx = f"preset_{_safe_name}"
+else:
+    _key_sfx = f"custom_{n_actors}_{n_events}_{n_resources}"
 
 tab_names = ["Interests (y)", "Control (c)"]
 if not use_identity:
     tab_names.append("Resources (a)")
 tabs = st.tabs(tab_names)
 
+# ── Interest matrix ───────────────────────────────────────────────────────────
 with tabs[0]:
     st.markdown(
         "**Actor × Event interest matrix.**  "
-        "Positive values = preference for a positive outcome; "
-        "negative values = preference for a negative outcome.  "
+        "Positive = preference for a positive outcome; negative = preference for a negative outcome.  "
         "Magnitudes reflect interest strength. Rows are normalised automatically."
     )
-    y_default = pd.DataFrame(
-        np.ones((n_actors, n_events)) / n_events,
-        index=actor_labels,
-        columns=event_labels,
+    if mode == "📋  Load preset example":
+        _y_init = preset["interest_matrix"]
+    else:
+        # Pad / trim the default matrix to the requested dimensions
+        _y_init = [
+            [(_DEF_Y[i][j] if i < len(_DEF_Y) and j < len(_DEF_Y[0]) else 1/n_events)
+             for j in range(n_events)]
+            for i in range(n_actors)
+        ]
+    y_df = st.data_editor(
+        pd.DataFrame(_y_init, index=actor_labels, columns=event_labels),
+        key=f"y_{_key_sfx}", use_container_width=True,
     )
-    y_df = st.data_editor(y_default, key=f"y_{dim_key}", use_container_width=True)
 
+# ── Control matrix ────────────────────────────────────────────────────────────
 with tabs[1]:
     st.markdown(
         "**Actor × Resource control matrix.**  "
         "Each row shows one actor's degree of control over each resource.  "
         "Rows are normalised automatically."
     )
-    c_default = pd.DataFrame(
-        np.ones((n_actors, n_resources)) / n_actors,
-        index=actor_labels,
-        columns=resource_labels,
+    if mode == "📋  Load preset example":
+        _c_init = preset["control_matrix"]
+    else:
+        _c_init = [
+            [(_DEF_C[i][j] if i < len(_DEF_C) and j < len(_DEF_C[0]) else 1/n_actors)
+             for j in range(n_resources)]
+            for i in range(n_actors)
+        ]
+    c_df = st.data_editor(
+        pd.DataFrame(_c_init, index=actor_labels, columns=resource_labels),
+        key=f"c_{_key_sfx}", use_container_width=True,
     )
-    c_df = st.data_editor(c_default, key=f"c_{dim_key}", use_container_width=True)
 
+# ── Resource-requirements matrix (only when not identity) ─────────────────────
 a_df: pd.DataFrame | None = None
 if not use_identity:
     with tabs[2]:
@@ -188,12 +354,19 @@ if not use_identity:
             "Each entry is how much event i draws on resource k.  "
             "Rows are normalised automatically."
         )
-        a_default = pd.DataFrame(
-            np.ones((n_events, n_resources)) / n_resources,
-            index=event_labels,
-            columns=resource_labels,
-        )
-        a_df = st.data_editor(a_default, key=f"a_{dim_key}", use_container_width=True)
+        if mode == "📋  Load preset example":
+            _a_init = preset["resource_matrix"]  # None for all paper examples
+        else:
+            _a_init = [
+                [(_DEF_A[i][j] if i < len(_DEF_A) and j < len(_DEF_A[0]) else 1/n_resources)
+                 for j in range(n_resources)]
+                for i in range(n_events)
+            ]
+        if _a_init is not None:
+            a_df = st.data_editor(
+                pd.DataFrame(_a_init, index=event_labels, columns=resource_labels),
+                key=f"a_{_key_sfx}", use_container_width=True,
+            )
 
 
 # ── Run button ─────────────────────────────────────────────────────────────────
